@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "target": "esnext",
+    "module": "esnext",
+    "lib": ["ESNext"],
+    "baseUrl": ".",
+    "rootDir": "src",
+    "strict": false,
+    "sourceMap": true,
+    "declaration": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "outDir": "dist/lib",
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "composite": true
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests",
+    "test",
+    "out",
+    "coverage"
+  ]
+}

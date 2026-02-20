@@ -1,0 +1,230 @@
+import type { Wasmlet, Mode } from "./types/types.js";
+import type { MainModule, Pointers, WasmOptions } from "./wasm/wavelib.js";
+
+export type cstr = Pointers["cstr"];
+export type ptr = Pointers["ptr"];
+export type wave_object = Pointers["wave_object"];
+
+import createModule from "./wasm/wavelib.js";
+
+let module: MainModule;
+
+type InitOptions = WasmOptions;
+
+/**
+ * Initialize the module. This must be called before using any of the functions
+ * in order to load the WebAssembly module. Calling this function multiple times
+ * will have no effect.
+ *
+ * @param options
+ * @returns a promise that resolves when the module is initialized
+ */
+export async function init(_options: InitOptions = {}): Promise<void> {
+  if (module) {
+    return;
+  }
+  module = await createModule();
+}
+
+function check_initialized() {
+  if (!module) {
+    throw new Error("need to call init() before using this function");
+  }
+}
+
+function encodeString(s: string): cstr {
+  const len = module.lengthBytesUTF8(s) + 1;
+  const ptr = module._malloc(len) as unknown as cstr;
+  module.stringToUTF8(s, ptr, len);
+  return ptr;
+}
+
+function dwt_max_level(input_len: number, wavelet: wave_object): number {
+  // See note in https://pywavelets.readthedocs.io/en/latest/ref/dwt-discrete-wavelet-transform.html#pywt.dwt_max_level
+  const filter_len = module._wave_filtlength(wavelet);
+
+  if (filter_len <= 1 || input_len < filter_len - 1) return 0;
+
+  return Math.floor(Math.log2(input_len / (filter_len - 1)));
+}
+
+function idwt_buffer_length(
+  coeffs_len: number,
+  filter_len: number,
+  mode: Mode,
+): number {
+  // See https://github.com/PyWavelets/pywt/blob/cf622996f3f0dedde214ab696afcd024660826dc/pywt/_extensions/c/common.c#L67
+  if (mode == "per") {
+    return 2 * coeffs_len;
+  }
+  return 2 * coeffs_len - filter_len + 2;
+}
+
+/**
+ * Perform a wavelet decomposition on a 1D signal.
+ *
+ * @param data - the 1D signal to decompose
+ * @param wavelet - the name of the wavelet to use
+ * @param mode - the mode to use for the DWT, either "sym" (default)
+ * or "per"
+ * @param level - the level of decomposition to perform. If undefined
+ * (default), the maximum level is used.
+ * @returns an array of Float64Arrays, where the first element is the
+ * approximation coefficients and the rest are detail coefficients
+ */
+export function wavedec(
+  data: Float64Array,
+  wavelet: Wasmlet,
+  mode: Mode = "sym",
+  level: number | undefined = undefined,
+): Float64Array[] {
+  check_initialized();
+
+  const wave_str = encodeString(wavelet);
+  const w = module._wave_init(wave_str);
+  module._free(wave_str);
+
+  if (level === undefined) {
+    level = dwt_max_level(data.length, w);
+  }
+
+  if (level === 0) {
+    return [data];
+  }
+
+  const mode_str = encodeString("dwt");
+  const wt = module._wt_init(w, mode_str, data.length, level);
+  module._free(mode_str);
+
+  if (mode == "per") {
+    const str = encodeString("per");
+    module._setDWTExtension(wt, str);
+    module._free(str);
+  }
+
+  const a_ptr = module._malloc(
+    data.length * Float64Array.BYTES_PER_ELEMENT,
+  ) as unknown as ptr;
+  module.HEAPF64.set(data, a_ptr / Float64Array.BYTES_PER_ELEMENT);
+  module._dwt(wt, a_ptr);
+  module._free(a_ptr);
+
+  // output is a flat buffer, but we can use the lengths array to split it
+  const len_len = module._wt_lenlength(wt) - 1; // note: -1 because the last element is the original signal length
+  const lens_ptr = module._wt_length(wt) / Int32Array.BYTES_PER_ELEMENT;
+  const lens = module.HEAP32.subarray(lens_ptr, lens_ptr + len_len);
+
+  const outlength = module._wt_outlength(wt);
+  const out_ptr = module._wt_output(wt) / Float64Array.BYTES_PER_ELEMENT;
+  const coeffs_flat = module.HEAPF64.slice(out_ptr, out_ptr + outlength);
+
+  const coeffs: Float64Array[] = [];
+
+  let offset = 0;
+  for (let i = 0; i < lens.length; i++) {
+    const len = lens[i];
+    coeffs.push(coeffs_flat.subarray(offset, offset + len));
+    offset += len;
+  }
+
+  module._wt_free(wt);
+  module._wave_free(w);
+  return coeffs;
+}
+
+/**
+ * Perform a wavelet reconstruction on a set of wavelet coefficients.
+ *
+ * @param coeffs - an array of Float64Arrays, where the first element is the
+ * approximation coefficients and the rest are detail coefficients
+ * @param wavelet - the name of the wavelet to use
+ * @param mode - the mode to use for the DWT, either "sym" (default)
+ * or "per"
+ * @returns the reconstructed signal as a Float64Array
+ */
+export function waverec(
+  coeffs: Float64Array[],
+  wavelet: Wasmlet,
+  mode: Mode = "sym",
+): Float64Array {
+  check_initialized();
+
+  if (coeffs.length < 1) {
+    throw new Error("coeffs must have at least one element");
+  } else if (coeffs.length === 1) {
+    // level 0 transform (just returns the approximation coefficients)
+    return coeffs[0];
+  }
+
+  const wave_str = encodeString(wavelet);
+  const w = module._wave_init(wave_str);
+  module._free(wave_str);
+
+  const filterLength = module._wave_filtlength(w);
+
+  let signalLength = idwt_buffer_length(coeffs[0].length, filterLength, mode);
+
+  for (let i = 2; i < coeffs.length; i++) {
+    const c_length = coeffs[i].length;
+    if (signalLength == c_length + 1) {
+      signalLength = c_length;
+    } else if (signalLength != c_length) {
+      throw new Error(
+        `Coefficient shape mismatch  ${signalLength},  ${c_length}`,
+      );
+    }
+    signalLength = idwt_buffer_length(signalLength, filterLength, mode);
+  }
+
+  const mode_str = encodeString("dwt");
+  const wt = module._wt_init(w, mode_str, signalLength, coeffs.length - 1);
+  module._free(mode_str);
+
+  if (mode == "per") {
+    const str = encodeString("per");
+    module._setDWTExtension(wt, str);
+    module._free(str);
+  }
+
+  // wavelib has no way to provide coefficients, it assumes
+  // they were populated by a previous call to _dwt.
+  // This code tries to mimic that behavior as best we can.
+  const output_len = coeffs.reduce((a, b) => a + b.length, 0);
+  const output = module._malloc(
+    output_len * Float64Array.BYTES_PER_ELEMENT,
+  ) as ptr;
+
+  const len_len = coeffs.length;
+  const lengths = module._malloc(len_len * Int32Array.BYTES_PER_ELEMENT) as ptr;
+
+  let offset = 0;
+  for (let i = 0; i < coeffs.length; i++) {
+    const coeff = coeffs[i];
+    module.HEAPF64.set(coeff, output / Float64Array.BYTES_PER_ELEMENT + offset);
+    offset += coeff.length;
+    module.HEAP32[lengths / Int32Array.BYTES_PER_ELEMENT + i] = coeff.length;
+  }
+  module._set_wt_output(wt, output, output_len, lengths, len_len);
+  module._free(lengths);
+
+  // call the inverse transform
+  const dwtop = module._malloc(
+    signalLength * Float64Array.BYTES_PER_ELEMENT,
+  ) as ptr;
+  module._idwt(wt, dwtop);
+  const result = module.HEAPF64.slice(
+    dwtop / Float64Array.BYTES_PER_ELEMENT,
+    dwtop / Float64Array.BYTES_PER_ELEMENT + signalLength,
+  );
+
+  module._free(dwtop);
+  // still needs to be freed, even though
+  // we passed it in to _set_wt_output, because
+  // the normal output is just extra storage at the end of
+  // the struct, so the pointer is never directly freed
+  module._free(output);
+  module._wt_free(wt);
+  module._wave_free(w);
+
+  return result;
+}

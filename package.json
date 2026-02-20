@@ -1,0 +1,108 @@
+{
+  "name": "@gsknnft/qwave",
+  "version": "1.0.0",
+  "description": "A high-performance, extensible TypeScript library for wavelet transforms with native bindings for Node.js",
+  "private": false,
+  "author": "Gordon Skinner",
+  "license": "MIT",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./wasmlets": {
+      "types": "./dist/types/wasmlets/src/index.d.ts",
+      "import": "./dist/wasmlets/src/index.js",
+      "require": "./dist/wasmlets/src/index.js"
+    },
+    "./discrete-wavelets": {
+      "types": "./dist/types/discrete-wavelets/src/index.d.ts",
+      "import": "./dist/discrete-wavelets/src/index.js",
+      "require": "./dist/discrete-wavelets/src/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/index.js",
+    "dist/index.cjs",
+    "dist/index.umd.js",
+    "dist/index.iife.js",
+    "dist/index.system.js",
+    "dist/__vite-browser-external-*.js",
+    "dist/__vite-browser-external-*.mjs",
+    "dist/entropy/**",
+    "dist/discrete-wavelets/src/**",
+    "dist/wasmlet/**",
+    "dist/wasmlets/src/**",
+    "dist/types/**",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "keywords": [
+    "wavelet",
+    "discrete",
+    "transform",
+    "signal",
+    "analysis",
+    "compression",
+    "decomposition",
+    "reconstruction",
+    "dwt",
+    "wavelet transform",
+    "signal processing",
+    "data analysis",
+    "data compression",
+    "data reconstruction",
+    "data decomposition",
+    "data processing",
+    "data transformation"
+  ],
+  "scripts": {
+    "build:dw": "cd src/discrete-wavelets && pnpm run build",
+    "build:wasmlets": "cd src/wasmlets && pnpm run build",
+    "build:tss": "vite build && tsc -p tsconfig.json && pnpm run build:types && pnpm run copy:wasm-artifacts",
+    "build": "pnpm build:wasmlets && pnpm build:dw && vite build && tsc -p tsconfig.json && pnpm run build:types && pnpm run copy:wasm-artifacts",
+    "build:types": "tsc -p tsconfig.json --declaration --emitDeclarationOnly --outDir dist/types",
+    "build:tsc": "tsc -p tsconfig.json",
+    "build:vite": "vite build --config vite.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "pnpm run build:wasmlets && pnpm run build:dw && tsc -p tsconfig.json --watch",
+    "test": "vitest run --coverage",
+    "test:prod": "pnpm run lint && pnpm run test -- --no-cache",
+    "test:watch": "vitest --coverage --watch",
+    "lint": "pnpm exec eslint . && tsc --noEmit",
+    "format": "prettier . --write",
+    "prepack": "node -e \"const fs=require('fs');const p='dist/tsconfig.tsbuildinfo';if(fs.existsSync(p))fs.rmSync(p,{force:true});\"",
+    "prepublishOnly": "pnpm run build && pnpm run test",
+    "copy:wasm-artifacts": "node ./scripts/copy-wasm-assets.cjs",
+    "clean": "pnpm -r run clean"
+  },
+  "dependencies": {
+    "@gsknnft/fft-ts": "1.0.2"
+  },
+  "devDependencies": {
+    "shx": "0.4.0",
+    "eslint": "^9.39.1",
+    "prettier": "^3.6.2",
+    "typescript": "5.9.3",
+    "vite": "7.2.7",
+    "vitest": "4.0.15"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gsknnft/sigilnet.git",
+    "directory": "packages/Qwave"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

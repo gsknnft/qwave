@@ -1,0 +1,87 @@
+{
+  "name": "wasmlets",
+  "version": "0.0.6",
+  "description": "WASM compiled code for wavelet decompositions. Currently based on https://github.com/rafat/wavelib",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./bridge": {
+      "types": "./dist/bridge.d.ts",
+      "import": "./dist/bridge.js",
+      "require": "./dist/bridge.js",
+      "default": "./dist/bridge.js"
+    },
+    "./types": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": "https://github.com/flatironinstitute/wasmlets",
+  "author": "Brian Ward",
+  "license": "BSD-3-Clause",
+  "scripts": {
+    "build": "tsup && pnpm run build:types && pnpm run build:umd",
+    "build:wasm": "make && pnpm run build",
+"copy:wasm": "shx mkdir -p ../../dist/wasmlets/src && shx cp -r c ../../dist/ && shx cp -r src/wasm ../../dist/wasmlets/src/",
+    "build:types": "tsc -p tsconfig.json --emitDeclarationOnly --declaration --declarationMap --outDir dist/types && pnpm run copy:wasm",
+    "build:umd": "rollup -c rollup.config.mjs",
+    "build:vite": "vite build",
+    "prepack": "pnpm run build",
+    "build:tsup": "tsup",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsc -p tsconfig.json --watch",
+    "test": "vitest run",
+    "lint": "eslint && tsc --noEmit && attw --pack . --profile node16",
+    "format": "prettier . --write"
+  },
+  "tsup": {
+    "entry": ["src/index.ts"],
+    "tsconfig": "./tsconfig.json",
+    "loader": { ".wasm": "file" },
+    "format": ["cjs", "esm"],
+    "dts": false,
+    "splitting": false,
+    "sourcemap": true,
+    "shims": true,
+    "clean": true
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "semi": true,
+    "arrowParens": "avoid"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.2",
+    "@vitest/coverage-v8": "^4.0.14",
+    "eslint": "^9.39.1",
+    "prettier": "^3.5.3",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "rollup": "4.53.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "7.2.7",
+    "vitest": "^4.0.9"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "dependencies": {
+    "@octokit/request-error": "^7.1.0",
+    "dev": "^0.1.3",
+    "pino": "^10.1.0",
+    "snowflake-sdk": "^2.3.1"
+  }
+}

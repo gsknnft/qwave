@@ -1,0 +1,59 @@
+MIT License
+
+Copyright (c) 2026 The VeraOS Project
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+IMPORTANT NOTES:
+
+1. This license applies ONLY to the integration adapter code in this package
+   (sigilnet). It does NOT grant any rights to SigilNet's
+   core implementation, which remains proprietary and separately licensed.
+
+2. The adapters, documentation, and examples provided here are for integration
+   purposes only. They demonstrate integration patterns but do not include or
+   expose SigilNet's cryptographic implementations, consensus mechanisms, field
+   closure algorithms, or other core intellectual property.
+
+3. Use of this integration SDK does not grant any patent rights, trademark
+   rights, or access to SigilNet's proprietary codebase.
+
+4. For access to SigilNet core or commercial licensing inquiries, please
+   contact the SigilNet team directly.
+
+
+## Trademark Policy
+
+The names **VeraOS**, **Vera**, **SigilNet**, and all related logos and identity
+elements are trademarks of the VeraOS Project and its maintainers.
+
+The MIT License above applies to the source code only. It does **not** grant
+any rights to use the project’s trademarks.
+
+You may:
+- reference the names when discussing this repository or its source code.
+
+You may not:
+- use these names or confusingly similar names for your own products, forks,
+  distributions, or commercial services,
+- imply endorsement, affiliation, or origin without explicit written permission.
+
+All rights to the VeraOS and SigilNet marks are reserved.
