@@ -1,7 +1,8 @@
 {
   "name": "@gsknnft/qwave",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A high-performance, extensible TypeScript library for wavelet transforms with native bindings for Node.js",
+  "type": "module",
   "private": false,
   "author": "Gordon Skinner",
   "license": "MIT",
@@ -11,8 +12,13 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/index.js",
+      "import": "./dist/index.cjs",
       "require": "./dist/index.cjs"
+    },
+    "./entropy": {
+      "types": "./dist/types/entropy/index.d.ts",
+      "import": "./dist/entropy/index.mjs",
+      "require": "./dist/entropy/index.cjs"
     },
     "./wasmlets": {
       "types": "./dist/types/wasmlets/src/index.d.ts",
@@ -65,8 +71,9 @@
   "scripts": {
     "build:dw": "cd src/discrete-wavelets && pnpm run build",
     "build:wasmlets": "cd src/wasmlets && pnpm run build",
-    "build:tss": "vite build && tsc -p tsconfig.json && pnpm run build:types && pnpm run copy:wasm-artifacts",
-    "build": "pnpm build:wasmlets && pnpm build:dw && vite build && tsc -p tsconfig.json && pnpm run build:types && pnpm run copy:wasm-artifacts",
+    "build:tss": "vite build && tsc -p tsconfig.json && pnpm run build:entropy && pnpm run build:types && pnpm run copy:wasm-artifacts && pnpm run smoke:node",
+    "build": "pnpm build:wasmlets && pnpm build:dw && vite build && tsc -p tsconfig.json && pnpm run build:entropy && pnpm run build:types && pnpm run copy:wasm-artifacts && pnpm run smoke:node",
+    "build:entropy": "vite build --config vite.entropy.config.ts",
     "build:types": "tsc -p tsconfig.json --declaration --emitDeclarationOnly --outDir dist/types",
     "build:tsc": "tsc -p tsconfig.json",
     "build:vite": "vite build --config vite.config.ts",
@@ -76,6 +83,7 @@
     "test:prod": "pnpm run lint && pnpm run test -- --no-cache",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest run --coverage",
+    "smoke:node": "node scripts/smoke-node-entropy.mjs",
     "lint": "pnpm exec eslint . && tsc --noEmit",
     "format": "prettier . --write",
     "prepack": "node -e \"const fs=require('fs');const p='dist/tsconfig.tsbuildinfo';if(fs.existsSync(p))fs.rmSync(p,{force:true});\"",
@@ -84,14 +92,14 @@
     "clean": "pnpm -r run clean"
   },
   "dependencies": {
-    "@gsknnft/fft-ts": "1.0.2"
+    "@gsknnft/fft-ts": "1.2.0"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "4.0.18",
     "shx": "0.4.0",
     "eslint": "^9.39.1",
     "prettier": "^3.6.2",
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
     "vite": "7.2.7",
     "vitest": "4.0.18"
   },
@@ -101,8 +109,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gsknnft/sigilnet.git",
-    "directory": "packages/Qwave"
+    "url": "git+https://github.com/gsknnft/qwave.git"
   },
   "publishConfig": {
     "access": "public"

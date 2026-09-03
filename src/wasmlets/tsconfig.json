@@ -6,8 +6,9 @@
     "moduleResolution": "nodenext",
     "outDir": "./dist",
     "declaration": true,
-    "lib":  ["ESNext"],
-    "baseUrl": ".",
+    "lib": [
+      "ESNext"
+    ],
     "rootDir": "src",
     "composite": true,
     "isolatedModules": true,
@@ -21,16 +22,19 @@
       "node_modules/@types"
     ],
     "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": []
   },
-  "include": ["src"],
+  "include": [
+    "./src"
+  ],
   "exclude": [
-    "node_modules",
-    "dist",
-    "build",
+    "./node_modules",
+    "./dist",
+    "./build",
     "**/dist",
     "**/build",
     "**/test",
-    "dist/**/*"
+    "./dist/**/*"
   ]
 }

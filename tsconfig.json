@@ -3,21 +3,25 @@
     "moduleResolution": "bundler",
     "module": "esnext",
     "target": "esnext",
-    "baseUrl": ".",
-    "rootDir": "src",
+    "rootDir": "./src",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "outDir": "dist",
-    "declarationDir": "dist/types",
-    "declaration": true
+    "outDir": "./dist",
+    "declarationDir": "./dist/types",
+    "declaration": true,
+    "types": []
   },
-  "include": ["src"],
+  "include": [
+    "./src"
+  ],
   "exclude": [
-    "node_modules",
-    "package.json",
-    "build",
+    "./node_modules",
+    "./package.json",
+    "./build",
     "**/dist/**",
-    "**/node_modules/**"
+    "**/node_modules/**",
+    "**/*.test.ts",
+    "**/*.config.ts"
   ]
 }

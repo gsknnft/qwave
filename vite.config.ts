@@ -19,13 +19,12 @@ export default defineConfig({
     lib: {
       entry: path.resolve(__dirname, "./src/index.ts"),
       name: "Qwave",
-      formats: ["es", "cjs", "umd", "iife", "system"],
+      formats: ["es", "cjs", "umd", "iife"],
       fileName: (format) => {
         if (format === "es") return "index.js";
         if (format === "cjs") return "index.cjs";
         if (format === "umd") return "index.umd.js";
         if (format === "iife") return "index.iife.js";
-        if (format === "system") return "index.system.js";
         return `index.${format}.js`;
       }
     },

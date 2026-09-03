@@ -1,25 +1,31 @@
 // Minimal placeholder for entropy utilities referenced across SigilNet.
 // packages/QWave/entropy.ts
 
-import { randomBytes } from "crypto";
-import { applyHannWindow } from "./windows";
+import { applyHannWindow } from "./windows.js";
 import { FFT, computeFFT } from "@gsknnft/fft-ts";
 import wt from "../discrete-wavelets/src/wt";
 
 export class EntropyLite {
-
   static seed(length: number): Uint8Array {
     const buf = new Uint8Array(length);
     for (let i = 0; i < length; i++) buf[i] = (Math.random() * 256) | 0;
     return buf;
   }
 
+  // Browser-safe random bytes
+  static randomBytes(length: number): Uint8Array {
+    const arr = new Uint8Array(length);
+    crypto.getRandomValues(arr);
+    return arr;
+  }
+
   static measureSpectrumWithWindow(values: Float64Array): number {
     // Placeholder metric: normalized variance.
     if (values.length === 0) return 0;
     const mean = values.reduce((a, b) => a + b, 0) / values.length;
-    const variance = values.reduce((acc, v) => acc + (v - mean) ** 2, 0) / values.length;
-    const varNorm = variance / (mean*mean + 1e-6);
+    const variance =
+      values.reduce((acc, v) => acc + (v - mean) ** 2, 0) / values.length;
+    const varNorm = variance / (mean * mean + 1e-6);
     return Math.min(varNorm, 1);
   }
 
@@ -35,6 +41,9 @@ export class EntropyLite {
 
 
 export class Entropy {
+  /** Floor substituted for a zero in Q. See `crossEntropy`. */
+  static readonly CROSS_ENTROPY_FLOOR = 1e-10;
+
   static negentropicIndex(coherence: number, H: number) {
     return coherence / (H + 1e-9);
   }
@@ -43,7 +52,7 @@ export class Entropy {
    * Generate a local entropy seed.
    */
   static seed(length: number = 256): Uint8Array {
-    return randomBytes(length);
+    return EntropyLite.randomBytes(length);
   }
 
   /**
@@ -65,7 +74,7 @@ export class Entropy {
    * Spectral entropy: measure entropy of FFT magnitudes.
    */
   static measureSpectrum(signal: Float64Array): number {
-    const fft = new FFT(signal);
+    const fft = new FFT(signal.length);
     const spectrum = fft.createComplexArray();
     fft.realTransform(spectrum, signal); // forward transform (out !== data)
 
@@ -90,7 +99,7 @@ export class Entropy {
     const reconstructed = Float64Array.from(
       wt.waverec([Array.from(signal).flat()], "haar"),
     );
-    const fft = new FFT(reconstructed);
+    const fft = new FFT(reconstructed.length);
     const spectrum = fft.createComplexArray();
     fft.realTransform(spectrum, reconstructed);
 
@@ -187,8 +196,29 @@ export class Entropy {
     return (current - prev) / (deltaT || 1e-6); // ΔH/Δt—damping term
   }
 
+  /**
+   * Cross-entropy H(P, Q) in bits.
+   *
+   * Note this is NOT a divergence: H(P, Q) = H(P) + KL(P||Q), so it does not
+   * vanish when P equals Q -- it returns H(P). Use `jensenShannonDivergence`
+   * when a distance is wanted.
+   *
+   * A zero in Q makes the true value infinite. It is floored rather than
+   * reported, which keeps the return finite at the cost of a magnitude that
+   * depends on the floor. Callers needing the honest answer should use the
+   * relative-entropy family in `@gsknnft/coherence`, which reports support
+   * mismatch instead of hiding it.
+   */
   static crossEntropy(p: number[], q: number[]): number {
-    return -p.reduce((sum, pi, i) => sum + pi * Math.log2(q[i] || 1e-10), 0);
+    const n = p.length;
+    let sum = 0;
+    for (let i = 0; i < n; i++) {
+      const pi = p[i] ?? 0;
+      if (pi <= 0) continue; // 0 log 0 = 0
+      const qi = q[i] ?? 0;
+      sum -= pi * Math.log2(qi > 0 ? qi : Entropy.CROSS_ENTROPY_FLOOR);
+    }
+    return sum;
   }
 
   static smooth(value: number, history: number[], window = 10): number {
@@ -198,24 +228,67 @@ export class Entropy {
   }
 
 
+  /**
+   * Spectral entropy of a Hann-windowed signal.
+   *
+   * Previously this also computed a normalized variance and a Jensen-Shannon
+   * divergence, combined them into a `score`, and then returned
+   * `measureSpectrum(windowed)` without ever using it. The dead work included a
+   * full JSD over every sample, and this function is on several hot paths.
+   */
   static measureSpectrumWithWindow(samples: Float64Array): number {
     const N = samples.length;
     if (N <= 2) return 0;
-    const mean = samples.reduce((a,b)=>a+b,0)/N;
-    const variance = samples.reduce((acc,v)=>acc+(v-mean)**2,0)/N;
-    const varNorm = variance / (mean*mean + 1e-6);
-    const jensen = this.jensenShannonDivergence(
-      Array.from(samples, v => v / (mean + 1e-6)),
-      Array(N).fill(1 / N)
-    );
-    const score = Math.min(0.5 * varNorm + 0.5 * jensen, 1);
     const windowed = applyHannWindow(samples, false) as Float64Array;
     return this.measureSpectrum(windowed);
   }
 
+  /**
+   * Jensen-Shannon divergence in bits: 0 for identical distributions, 1 for
+   * disjoint ones.
+   *
+   *   JSD(P||Q) = 1/2 KL(P||M) + 1/2 KL(Q||M),   M = (P + Q) / 2
+   *
+   * Built from KL divergences to the mixture, NOT from cross-entropies to it.
+   * That distinction was previously wrong here and it inverted the metric:
+   * since H(P,M) = H(P) + KL(P||M), averaging cross-entropies returns
+   * 1/2[H(P)+H(Q)] + JSD, which does not vanish when P equals Q. Measured on a
+   * uniform 4-bin vector, JSD(p, p) returned 2.0 -- exactly H(p) -- while a
+   * genuinely different distribution scored 1.83. Identical inputs ranked as
+   * MORE divergent than different ones.
+   *
+   * Inputs are normalized here. JSD is only defined between distributions, and
+   * callers were passing unnormalized magnitude vectors.
+   */
   static jensenShannonDivergence(p: number[], q: number[]): number {
-    const m = p.map((pi, i) => (pi + q[i]) / 2);
-    return (this.crossEntropy(p, m) + this.crossEntropy(q, m)) / 2; // Distance for peer resonance
+    // Treat an omitted tail as zero mass. This preserves every outcome carried
+    // by either vector instead of silently discarding the longer vector's tail.
+    const n = Math.max(p.length, q.length);
+    if (n === 0) return 0;
+
+    let sumP = 0;
+    let sumQ = 0;
+    for (let i = 0; i < n; i++) {
+      sumP += Math.max(0, p[i] ?? 0);
+      sumQ += Math.max(0, q[i] ?? 0);
+    }
+    // No distribution exists for an empty or all-zero vector; 0 divergence is
+    // the only non-arbitrary answer, and it is what identical-and-empty means.
+    if (!(sumP > 0) || !(sumQ > 0)) return 0;
+
+    let divergence = 0;
+    for (let i = 0; i < n; i++) {
+      const pi = Math.max(0, p[i] ?? 0) / sumP;
+      const qi = Math.max(0, q[i] ?? 0) / sumQ;
+      const mi = (pi + qi) / 2;
+      if (mi <= 0) continue;
+      // The mixture has support wherever either input does, so neither term can
+      // divide by zero -- which is why JSD needs no smoothing where KL does.
+      if (pi > 0) divergence += 0.5 * pi * Math.log2(pi / mi);
+      if (qi > 0) divergence += 0.5 * qi * Math.log2(qi / mi);
+    }
+    // Bounded by log2(2) = 1 bit; clamp both ends against float error.
+    return Math.min(1, Math.max(0, divergence));
   }
 
   static totalEntropy(buf: Uint8Array, alpha = 0.6): number {

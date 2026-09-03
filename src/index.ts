@@ -60,3 +60,5 @@ export interface WasmletLib {
   init: typeof init;
   loadWasmlet: typeof loadWasmlet;
 }
+
+export default wt;

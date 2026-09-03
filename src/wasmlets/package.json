@@ -35,7 +35,7 @@
   "scripts": {
     "build": "tsup && pnpm run build:types && pnpm run build:umd",
     "build:wasm": "make && pnpm run build",
-"copy:wasm": "shx mkdir -p ../../dist/wasmlets/src && shx cp -r c ../../dist/ && shx cp -r src/wasm ../../dist/wasmlets/src/",
+    "copy:wasm": "shx mkdir -p ../../dist/wasmlets/src && shx cp -r c ../../dist/ && shx cp -r src/wasm ../../dist/wasmlets/src/",
     "build:types": "tsc -p tsconfig.json --emitDeclarationOnly --declaration --declarationMap --outDir dist/types && pnpm run copy:wasm",
     "build:umd": "rollup -c rollup.config.mjs",
     "build:vite": "vite build",
@@ -48,10 +48,17 @@
     "format": "prettier . --write"
   },
   "tsup": {
-    "entry": ["src/index.ts"],
+    "entry": [
+      "src/index.ts"
+    ],
     "tsconfig": "./tsconfig.json",
-    "loader": { ".wasm": "file" },
-    "format": ["cjs", "esm"],
+    "loader": {
+      ".wasm": "file"
+    },
+    "format": [
+      "cjs",
+      "esm"
+    ],
     "dts": false,
     "splitting": false,
     "sourcemap": true,
@@ -69,7 +76,7 @@
     "eslint": "^9.39.1",
     "prettier": "^3.5.3",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "rollup": "4.53.3",
     "typescript-eslint": "^8.46.4",
     "vite": "7.2.7",

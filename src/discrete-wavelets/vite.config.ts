@@ -1,36 +1,38 @@
 import { defineConfig } from "vite";
 import path from "path";
-import ts from "./tsconfig.json";
 
+/**
+ * ESM-only library build.
+ *
+ * Previously this emitted es + cjs + umd + iife, and a SEPARATE rollup pass
+ * (`build:umd`) re-bundled `dist/lib/wt.js` into UMD/es5. Nothing consumed any
+ * of it: @gsknnft/qwave imports this package from SOURCE
+ * (`./discrete-wavelets/src/wt`), and no other package references the built
+ * artifacts at all. The rollup pass existed only to break deploys — it needed
+ * `dist/lib/*.js` from a full `tsc` emit, which silently produced nothing
+ * whenever `composite: true` found a stale tsbuildinfo.
+ *
+ * This file also used to `import ts from "./tsconfig.json"` to derive path
+ * aliases. tsconfig.json has no `paths`, so it computed an empty array — while
+ * making the build depend on that file being parseable as STRICT JSON by
+ * rolldown. A `//` comment in tsconfig.json (legal for tsc) was therefore a
+ * hard build failure here. The coupling is gone.
+ */
 const externalDeps = [
   "fs", "path", "os", "http", "https", "stream", "zlib",
   "events", "buffer", "util", "crypto", "child_process", "readline",
-  // keep only runtime externals here
 ];
-
-const tsPaths =
-  ts.compilerOptions && "paths" in ts.compilerOptions && ts.compilerOptions.paths
-    ? Object.keys(ts.compilerOptions.paths).map(key => key.replace("/*", ""))
-    : [];
 
 export default defineConfig({
   build: {
     lib: {
       entry: path.resolve(__dirname, "./src/index.ts"),
-      name: "wt",
-      formats: ["es", "cjs", "umd", "iife", "system"],
-      fileName: (format) => {
-        if (format === "es") return "index.js";
-        if (format === "cjs") return "index.cjs";
-        if (format === "umd") return "index.umd.js";
-        if (format === "iife") return "index.iife.js";
-        if (format === "system") return "index.system.js";
-        return `index.${format}.js`;
-      }
+      formats: ["es"],
+      fileName: () => "index.js",
     },
     outDir: "dist",
     rollupOptions: {
-      external: [...externalDeps, ...tsPaths],
+      external: externalDeps,
     },
   },
 });

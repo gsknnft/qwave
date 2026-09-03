@@ -1,12 +1,3 @@
-export type { PaddingMode, PaddingModes, PaddingWidths } from './padding/padding';
-
-export type {
-  Filters,
-  Wavelet,
-  WaveletBasis,
-  WaveletType,
-} from './wavelets/wavelets';
-
 import {
   add,
   assertValidApproxDetail,
@@ -24,16 +15,11 @@ export { antisymmetricPadding, constantPadding, periodicPadding, reflectPadding,
 
 export { Db2Wavelet, Db3Wavelet, Db4Wavelet, Db5Wavelet, Db6Wavelet, Db7Wavelet, Db8Wavelet, Db9Wavelet, Db10Wavelet, HaarWavelet, ScalingNumbers } from './wavelets/wavelets';
 
-import {
-  PADDING_MODES,
-  type PaddingMode,
-  PaddingModes,
-  type PaddingWidths,
-} from './padding/padding';
+import { PADDING_MODES, PaddingMode, PaddingModes, PaddingWidths } from './padding/padding';
 
 import {
   Filters,
-  type Wavelet,
+  Wavelet,
   WaveletBasis,
 } from "./wavelets/wavelets";
 

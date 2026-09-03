@@ -1,4 +1,8 @@
 # @gsknnft/qwave
+[![NPM Version](https://img.shields.io/npm/v/@gsknnft/qwave.svg?style=flat-square)](https://www.npmjs.com/package/@gsknnft/qwave)
+[![NPM Downloads](https://img.shields.io/npm/dw/@gsknnft/qwave.svg?style=flat-square)](https://www.npmjs.com/package/@gsknnft/qwave)
+[![License](https://img.shields.io/npm/l/@gsknnft/qwave.svg?style=flat-square)](https://www.npmjs.com/package/@gsknnft/qwave)
+[![Socket Badge](https://badge.socket.dev/npm/package/@gsknnft/qwave/1.0.0)](https://socket.dev/npm/package/@gsknnft/qwave)
 
 Wave/spectral toolkit for SigilNet & VeraOS workloads. `qwave` exposes a single package surface over:
 

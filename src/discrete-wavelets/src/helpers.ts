@@ -1,7 +1,4 @@
-import {
-  PaddingMode,
-  PaddingWidths,
-} from "./wt";
+import { PaddingMode, PaddingWidths } from "./padding/padding";
 import {
   antisymmetricPadding,
   constantPadding,

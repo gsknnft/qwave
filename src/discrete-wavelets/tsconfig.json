@@ -3,9 +3,10 @@
     "moduleResolution": "bundler",
     "target": "esnext",
     "module": "esnext",
-    "lib": ["ESNext"],
-    "baseUrl": ".",
-    "rootDir": "src",
+    "lib": [
+      "ESNext"
+    ],
+    "rootDir": "./src",
     "strict": false,
     "sourceMap": true,
     "declaration": true,
@@ -15,21 +16,23 @@
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "outDir": "dist/lib",
+    "outDir": "./dist/lib",
     "typeRoots": [
-      "node_modules/@types"
+      "./node_modules/@types"
     ],
-    "composite": true
+    "types": [
+      "node"
+    ]
   },
   "include": [
-    "src"
+    "./src"
   ],
   "exclude": [
-    "node_modules",
-    "dist",
-    "tests",
-    "test",
-    "out",
-    "coverage"
+    "./node_modules",
+    "./dist",
+    "./tests",
+    "./test",
+    "./out",
+    "./coverage"
   ]
 }
